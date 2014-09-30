@@ -1,7 +1,7 @@
 <?php
 
 	register_nav_menus( array(
-		'main' => __( 'Main Navigation', 'text_domain' )
+		'main' => __( 'Main Navigation', 'text_domain' ),
 	) );	
 		
 	add_theme_support( 'post-thumbnails' );
@@ -32,19 +32,6 @@
 		$excerpt = preg_replace( '`\[[^\]]*\]`' , '', $excerpt );
 		return $excerpt;
 	}
-	
-	function content( $limit ) {
-		$content = explode( ' ', get_the_content(), $limit );
-		if ( count( $content ) >= $limit ) {
-			array_pop( $content );
-			$content = implode( " ", $content ) . '...';
-		} else {
-			$content = implode( " ", $content );
-		} 
-		$content = preg_replace( '/\[.+\]/', '', $content );
-		$content = apply_filters( 'the_content', $content ); 
-		return $content;
-	}
 
 	function remove_menus(){
 	
@@ -74,8 +61,79 @@
 		wp_enqueue_style( 'theme-css', get_stylesheet_uri() );
 		wp_enqueue_style( 'bxslider', get_template_directory_uri() . '/assets/js/jquery.bxslider.css' );
 		wp_enqueue_script( 'html5shiv', '//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.js', array(), '3.7', false );
+		wp_enqueue_script( 'theme-js', get_template_directory_uri() . '/assets/js/script.js', array( 'jquery' ), '1', true );
 		wp_enqueue_script( 'bxslider', get_template_directory_uri() . '/assets/js/jquery.bxslider.min.js', array( 'jquery' ), '4.1.1', true );
 	}
 	add_action( 'wp_enqueue_scripts', 'queue_scripts' );
+
+	function lead_shortcode( $atts, $content ) {
+		$atts = extract( shortcode_atts( array( 'default'=>'values' ),$atts ) );
+		return '<p class="lead">' . $content . '</p>';
+	}
+	add_shortcode( 'lead','lead_shortcode' );
+
+	function divider_shortcode() {
+		return '<div class="divider"></div>';
+	}
+	add_shortcode( 'divider','divider_shortcode' );
+	add_shortcode( 'divide','divider_shortcode' );
+
+	function paginate( $query = null ){
+
+		// If custom query is passed through, set $query equal to the global $wp_query
+		if( is_null( $query ) ){
+			global $wp_query;
+			$query = $wp_query;
+		}
+
+		// Get total number of pages
+		$total = $query->max_num_pages;
+
+		// Only do something if there is more than one page
+		if ( $total > 1 ) {
+
+			// Get current page
+			if ( ! $current = get_query_var( 'paged' ) )
+				$current = 1;
+
+			// Set the format - wether permalinks are set or not
+			// $format = (empty( get_option( 'permalink_structure' ) ) ? '&page=%#%' : 'page/%#%/');
+			// $format = empty( get_option( 'permalink_structure' ) ) ? '&page=%#%' : '/page/%#%/';
+
+			$args = array(
+				'base'					=> get_pagenum_link( 1 ) . '%_%',
+				'format'				=> '&paged=%#%',
+				'total'					=> $total,
+				'current'				=> $current,
+				'show_all'				=> false,
+				'end_size'				=> 1,
+				'mid_size'				=> 2,
+				'prev_next'				=> false,
+				// 'prev_text'				=> __('<i class="fa fa-angle-left"></i> Previous'),
+				// 'next_text'				=> __('Next <i class="fa fa-angle-right"></i>'),
+				'prev_text'				=> __('&lt; Previous'),
+				'next_text'				=> __('Next &gt;'),
+				'type'					=> 'array',
+				'add_args'				=> false,
+				'add_fragment'			=> '',
+				'before_page_number'	=> '',
+				'after_page_number'		=> ''
+			);
+
+			$pages = paginate_links( $args );
+
+			$html = '<div class="pagination"><ul class="pagination-links">';
+			foreach ($pages as $page) {
+				$html .= ( strpos( $page, 'current' ) ? '<li class="active">' . $page . '</li>' : '<li>' . $page . '</li>' );
+			}
+			$html .= '</ul></div>';
+
+			return $html;
+
+		} else {
+			return '';
+		}
+
+	}
 
 ?>
